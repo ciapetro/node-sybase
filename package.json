@@ -9,23 +9,20 @@
   "scripts": {
     "test": "mocha"
   },
-  "homepage": "http://github.com/rodhoward/node-sybase/",
+  "homepage": "https://github.com/ciapetro/node-sybase",
   "repository": {
     "type": "git",
-    "url": "git://github.com/rodhoward/node-sybase.git"
+    "url": "git://github.com/ciapetro/node-sybase.git"
   },
   "license": "MIT",
-  "keywords" : [
-  	"database",
-  	"sybase",
-  	"jconnect",
-  	"sql",
-  	"java"
+  "keywords": [
+    "database",
+    "sybase",
+    "jconnect",
+    "sql",
+    "java"
   ],
-  "author": "Rod Howard <rod.howard@gmail.com>",
-  "bugs": {
-    "url": "https://github.com/rodhoward/node-sybase/issues"
-  },
+  "author": "Ciapetro <ciapetro@desenvolvimento.vom.br>",
   "devDependencies": {
     "bluebird": "^3.4.6",
     "chai": "^3.5.0",
