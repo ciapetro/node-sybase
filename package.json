@@ -20,11 +20,15 @@
         "url": "git://github.com/ciapetro/node-sybase.git"
     },
     "license": "MIT",
+    "files": [
+        "dist/**/*"
+    ],
     "keywords": [
         "database",
         "sybase",
         "jconnect",
         "sql",
+        "ciapetro",
         "java"
     ],
     "author": "Ciapetro <ciapetro@desenvolvimento.vom.br>",
