@@ -2,8 +2,6 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
 import com.sybase.jdbc4.jdbc.SybDriver;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Properties;
@@ -14,9 +12,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
 /**
@@ -73,23 +68,9 @@ public class SybaseDB {
         ExecSQLCallable execSQLCallable = new ExecSQLCallable(conn, df, request);
         Future f = executor.submit(execSQLCallable);
         try {
-            long timeout = request.timeout != 0 ? request.timeout : 600000l;
+            long timeout = request.timeout != null ? request.timeout : 600000l;
             f.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            f.cancel(true);
-            execSQLCallable.canceled = true;
-            JSONObject response = new JSONObject();
-            response.put("msgId", request.msgId);
-            response.put("error", "Timeout" );
-            System.out.println(response.toJSONString());
-        } catch (ExecutionException ex) {
-            f.cancel(true);
-            execSQLCallable.canceled = true;
-            JSONObject response = new JSONObject();
-            response.put("msgId", request.msgId);
-            response.put("error", "Timeout" );
-            System.out.println(response.toJSONString());
-        } catch (TimeoutException ex) {
+        } catch (InterruptedException | ExecutionException | TimeoutException ex) {
             f.cancel(true);
             execSQLCallable.canceled = true;
             JSONObject response = new JSONObject();

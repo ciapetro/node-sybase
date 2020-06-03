@@ -40,8 +40,11 @@ public class StdInputReader {
             request = new SQLRequest();
             request.msgId = (Integer) val.get("msgId");
             request.sql = (String) val.get("sql");
-            request.javaStartTime = startTime;;
-            request.timeout = new Long((Integer) val.get("timeout"));
+            request.javaStartTime = startTime;
+            Object timeout = val.get("timeout");
+            if (timeout != null) {
+                request.timeout = new Long((Integer) timeout);
+            }
         } catch (Exception e) {
             request = null;
         }

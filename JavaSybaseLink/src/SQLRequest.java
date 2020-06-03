@@ -7,5 +7,5 @@ public class SQLRequest {
 	String sql;
 	long sentTime;
 	long javaStartTime;
-        long timeout;
+        Long timeout;
 }

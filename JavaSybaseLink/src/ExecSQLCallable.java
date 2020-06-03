@@ -48,7 +48,7 @@ public class ExecSQLCallable implements Callable<String> {
         
         try {
             Statement stmt = conn.createStatement();
-            Long timeout = request.timeout != 0 ? request.timeout : 600000l;
+            Long timeout = request.timeout != null ? request.timeout : 600000l;
             stmt.setQueryTimeout(timeout.intValue() * 1000);
             boolean isRS = stmt.execute(request.sql);
             while (!canceled && (isRS || (stmt.getUpdateCount() != -1)) ) {
