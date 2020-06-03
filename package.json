@@ -1,19 +1,18 @@
 {
     "name": "ciapetro-sybase",
-    "version": "1.2.3",
+    "version": "1.3.0",
     "description": "A simple node.js wrapper around a java/jconnect app that provides easy access to Sybase Databases without having to install odbc or freetds.",
     "dependencies": {
         "JSONStream": "latest"
     },
-    "main": "src/SybaseDB.ts",
-    "types": "src/SybaseDB.d.ts",
+    "main": "dist/SybaseDB.js",
+    "types": "dist/SybaseDB.d.ts",
     "scripts": {
         "test": "mocha -r ts-node/register test/**/*.ts",
         "prebuild": "rimraf dist",
-        "copyJava": "mkdir  \"dist/JavaSybaseLink/dist/lib\" &&  @powershell copy './JavaSybaseLink/dist/*.*' './dist/JavaSybaseLink/dist' &&  @powershell copy './JavaSybaseLink/dist/lib/*.*' './dist/JavaSybaseLink/dist/lib'",
         "copyPackage": "@powershell copy 'package.json' './dist'",
         "build": "tsc",
-        "postbuild": "npm run copyJava && npm run copyPackage && cd dist && npm install --only=production"
+        "postbuild": "npm run copyPackage"
     },
     "homepage": "https://github.com/ciapetro/node-sybase",
     "repository": {
@@ -21,9 +20,6 @@
         "url": "git://github.com/ciapetro/node-sybase.git"
     },
     "license": "MIT",
-    "files": [
-        "dist/**/*"
-    ],
     "keywords": [
         "database",
         "sybase",

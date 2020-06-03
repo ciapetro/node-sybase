@@ -19,7 +19,7 @@ type ResponseMessage = {
     error: string;
 };
 
-export default class Sybase {
+export = class Sybase {
     private connected = false;
     private host: string;
     private port: number;
@@ -211,4 +211,4 @@ export default class Sybase {
             cb(error);
         });
     }
-}
+};

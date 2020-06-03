@@ -27,7 +27,7 @@ npm install ciapetro-sybase
 ### Connect
 
 ```javascript
-const Sybase = require('ciapetro-sybase'),
+const Sybase = require('ciapetro-sybase').default,
     db = new Sybase('host', port, 'dbName', 'username', 'pw');
 
 try {
@@ -40,7 +40,7 @@ try {
 ### Disconnect
 
 ```javascript
-const Sybase = require('ciapetro-sybase'),
+const Sybase = require('ciapetro-sybase').default,
     db = new Sybase('host', port, 'dbName', 'username', 'pw', 'pathToJavaBridge (optional)', logQuerys);
 
 try {
@@ -54,7 +54,7 @@ try {
 ### Query Async
 
 ```javascript
-const Sybase = require('ciapetro-sybase'),
+const Sybase = require('ciapetro-sybase').default,
     db = new Sybase('host', port, 'dbName', 'username', 'pw');
 
 try {
@@ -70,7 +70,7 @@ try {
 ### Query Callback
 
 ```javascript
-const Sybase = require('sybase'),
+const Sybase = require('sybase').default,
     db = new Sybase('host', port, 'dbName', 'username', 'pw');
 
 try {
@@ -102,7 +102,7 @@ try {
 ### Check Connected
 
 ```javascript
-const Sybase = require('sybase'),
+const Sybase = require('sybase').default,
     db = new Sybase('host', port, 'dbName', 'username', 'pw');
 
 try {
