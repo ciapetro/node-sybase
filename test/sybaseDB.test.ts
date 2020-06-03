@@ -1,13 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { expect } from 'chai';
 import Sybase from '../src/SybaseDB';
 import { promisify, all } from 'bluebird';
 
 //Configure To Connect To Your database on file .env:
-const host = process.env.DB_TEST_HOST,
-    port = process.env.DB_TEST_PORT,
-    user = process.env.DB_TEST_USER,
-    pw = process.env.DB_TEST_PASSWORD,
-    db = process.env.DB_TEST_NAME;
+const host = process.env.DB_TEST_HOST || '',
+    port = process.env.DB_TEST_PORT || '',
+    user = process.env.DB_TEST_USER || '',
+    pw = process.env.DB_TEST_PASSWORD || '',
+    db = process.env.DB_TEST_NAME || '';
 
 describe('Node Sybase Bridge', function () {
     let subject: Sybase;

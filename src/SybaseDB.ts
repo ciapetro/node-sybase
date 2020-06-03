@@ -136,7 +136,6 @@ export default class Sybase {
         };
 
         const strMsg = JSON.stringify(msg).replace(/[\n]/g, '\\n');
-        console.log(strMsg);
         msg.callback = callback;
         msg.hrstart = hrstart;
 
