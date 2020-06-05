@@ -109,7 +109,9 @@ export = class Sybase {
     }
 
     disconnect(): void {
-        this.javaDB.kill();
+        if (this.javaDB) {
+            this.javaDB.kill();
+        }
         this.connected = false;
     }
 
