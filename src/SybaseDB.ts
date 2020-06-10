@@ -9,6 +9,7 @@ type Message = {
     timeout: number | null;
     callback?: Function;
     hrstart?: [number, number];
+    isQuery: boolean;
 };
 
 type ResponseMessage = {
@@ -16,7 +17,8 @@ type ResponseMessage = {
     result: any[] | any;
     javaEndTime: number;
     javaStartTime: number;
-    error: string;
+    error: boolean;
+    errorMessage: string;
 };
 
 export = class Sybase {
@@ -54,7 +56,7 @@ export = class Sybase {
         this.logQuery = logQuery || false;
         this.pathToJavaBridge = pathToJavaBridge;
         if (this.pathToJavaBridge === undefined) {
-            this.pathToJavaBridge = path.resolve(__dirname, '..', 'JavaSybaseLink', 'dist', 'JavaSybaseLink.jar');
+            this.pathToJavaBridge = path.resolve(__dirname, '..', 'JavaSybaseLink', 'dist', 'gorepl.exe');
         }
 
         this.queryCount = 0;
@@ -65,9 +67,7 @@ export = class Sybase {
 
     async connect(): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.javaDB = spawn('java', [
-                '-jar',
-                this.pathToJavaBridge || '',
+            this.javaDB = spawn(this.pathToJavaBridge || '', [
                 this.host,
                 this.port ? this.port.toString() : '',
                 this.dbname,
@@ -119,7 +119,13 @@ export = class Sybase {
         return this.connected;
     }
 
+    execute(sql: string, callback: Function, timeout?: number): void {
+        this.sendMessage(sql, callback, false, timeout);
+    }
     query(sql: string, callback: Function, timeout?: number): void {
+        this.sendMessage(sql, callback, true, timeout);
+    }
+    sendMessage(sql: string, callback: Function, isQuery: boolean, timeout?: number): void {
         if (this.isConnected === false) {
             callback(new Error("database isn't connected."));
             return;
@@ -135,6 +141,7 @@ export = class Sybase {
             callback: undefined,
             hrstart: undefined,
             timeout: timeout && timeout > 0 ? timeout : null,
+            isQuery,
         };
 
         const strMsg = JSON.stringify(msg).replace(/[\n]/g, '\\n');
@@ -168,21 +175,36 @@ export = class Sybase {
         });
     }
 
+    async executeAsync(sql: string, timeout?: number): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.execute(
+                sql,
+                (err: Error, results: any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                },
+                timeout,
+            );
+        });
+    }
+
     onSQLResponse(jsonMsg: ResponseMessage): void {
         let err: any = undefined;
         const request = this.currentMessages[jsonMsg.msgId];
         delete this.currentMessages[jsonMsg.msgId];
 
-        let result = jsonMsg.result;
-        if (result && result.length === 1) result = result[0]; //if there is only one just return the first RS not a set of RS's
+        const result = jsonMsg.result;
 
         const currentTime = new Date().getTime();
         const sendTimeMS = currentTime - jsonMsg.javaEndTime;
         const hrend = process.hrtime(request.hrstart);
         const javaDuration = jsonMsg.javaEndTime - jsonMsg.javaStartTime;
 
-        if (jsonMsg.error !== undefined) {
-            err = new Error(jsonMsg.error);
+        if (jsonMsg.error) {
+            err = new Error(jsonMsg.errorMessage);
         }
 
         if (this.logTiming)

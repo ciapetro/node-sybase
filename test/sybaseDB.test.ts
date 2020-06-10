@@ -55,24 +55,16 @@ describe('Node Sybase Bridge', function () {
         });
     });
 
-    it('Should work with updates', function (done) {
+    it('Should work with updates async', async function () {
         if (!subject.isConnected) {
             expect(connectError).to.equal(null);
-            done();
             return;
         }
 
-        subject.query('update DBA.Bandeira set BandeiraANP = descricao where codBandeira = 1', function (err, results) {
-            if (err) {
-                done(err);
-            } else {
-                expect(err).to.equal(undefined);
-                console.log('updates returned: ' + JSON.stringify(results));
-                console.dir(results);
-                expect(results).not.be.null;
-                done();
-            }
-        });
+        const results = await subject.executeAsync(
+            'update DBA.Bandeira set BandeiraANP = descricao where codBandeira = 1',
+        );
+        expect(results).not.be.null;
     });
 
     it('Should work with inserts', function (done) {
@@ -82,23 +74,19 @@ describe('Node Sybase Bridge', function () {
             return;
         }
 
-        subject.query("DELETE DBA.Bandeira WHERE descricao ='TESTE NODE';", function (err, results) {
+        subject.execute("DELETE DBA.Bandeira WHERE descricao ='TESTE NODE';", function (err, results) {
             if (err) {
                 done(err);
             } else {
                 expect(err).to.equal(undefined);
-                console.log('updates returned: ' + JSON.stringify(results));
-                console.dir(results);
                 expect(results).not.be.null;
-                subject.query(
+                subject.execute(
                     "INSERT INTO DBA.Bandeira (codBandeira,descricao,BloqueadoVendas,BandeiraANP) VALUES ('79','TESTE NODE',1,'TESTE NODE');",
                     function (err, results) {
                         if (err) {
                             done(err);
                         } else {
                             expect(err).to.equal(undefined);
-                            console.log('inserts returned: ' + JSON.stringify(results));
-                            console.dir(results);
                             expect(results).not.be.null;
                             done();
                         }
@@ -115,13 +103,11 @@ describe('Node Sybase Bridge', function () {
             return;
         }
 
-        subject.query('exec DBA.GetFrotaEntidade(1)', function (err, results) {
+        subject.execute('exec DBA.GetFrotaEntidade(1)', function (err, results) {
             if (err) {
                 done(err);
             } else {
                 expect(err).to.equal(undefined);
-                console.log('Procedure returned: ' + JSON.stringify(results));
-                console.dir(results);
                 expect(results).not.be.null;
                 done();
             }
@@ -145,8 +131,6 @@ describe('Node Sybase Bridge', function () {
 
         all(pArray)
             .then(function (results) {
-                console.log(JSON.stringify(results));
-
                 results.forEach(function (data) {
                     expect(data).to.be.a('array');
                     expect(data.length).to.equal(1);
@@ -176,8 +160,6 @@ describe('Node Sybase Bridge', function () {
 
         all(pArray)
             .then(function (results) {
-                console.log(JSON.stringify(results));
-
                 results.forEach(function (data) {
                     expect(data).to.be.a('array');
                     expect(data.length).to.equal(1);
@@ -217,7 +199,7 @@ describe('Node Sybase Bridge', function () {
             'select * from DBA.Entidade',
             function (err, data) {
                 expect(err.message).to.equal('Timeout');
-                expect(data).to.be.undefined;
+                expect(data).to.be.null;
                 done();
             },
             1000,
