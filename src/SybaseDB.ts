@@ -1,22 +1,19 @@
+import path from 'path';
+import os from 'os';
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import JSONStream from 'JSONStream';
-import path from 'path';
 
 type Message = {
     msgId: number;
     sql: string;
-    sentTime: number;
     timeout: number | null;
     callback?: Function;
-    hrstart?: [number, number];
     isQuery: boolean;
 };
 
 type ResponseMessage = {
     msgId: number;
     result: any[] | any;
-    javaEndTime: number;
-    javaStartTime: number;
     error: boolean;
     errorMessage: string;
 };
@@ -30,12 +27,12 @@ export = class Sybase {
     private password: string;
     private logTiming: boolean;
     private logQuery: boolean;
-    private pathToJavaBridge: undefined | string;
+    private pathToRepl: undefined | string;
     private queryCount = 0;
     private currentMessages = {}; // look up msgId to message sent and call back details.
     private jsonParser;
-    private javaDB!: ChildProcessWithoutNullStreams;
-
+    private repl!: ChildProcessWithoutNullStreams;
+    private fileExecutable: string;
     constructor(
         host: string,
         port: number,
@@ -43,7 +40,7 @@ export = class Sybase {
         username: string,
         password: string,
         logTiming: boolean,
-        pathToJavaBridge?: string,
+        pathToRepl?: string,
         logQuery?: boolean,
     ) {
         this.connected = false;
@@ -54,11 +51,26 @@ export = class Sybase {
         this.password = password;
         this.logTiming = logTiming == true;
         this.logQuery = logQuery || false;
-        this.pathToJavaBridge = pathToJavaBridge;
-        if (this.pathToJavaBridge === undefined) {
-            this.pathToJavaBridge = path.resolve(__dirname, '..', 'JavaSybaseLink', 'dist', 'gorepl.exe');
+        this.pathToRepl = pathToRepl;
+        if (this.pathToRepl === undefined) {
+            this.pathToRepl = path.resolve(__dirname, '..', 'gorepl', 'dist');
         }
-
+        this.fileExecutable = '';
+        switch (os.type()) {
+            case 'Windows_NT':
+                this.fileExecutable = 'gorepl-win.exe';
+                break;
+            case 'Linux': {
+                this.fileExecutable = './gorepl-linux';
+                break;
+            }
+            case 'Darwin': {
+                this.fileExecutable = './gorepl-darwin';
+                break;
+            }
+            default:
+                break;
+        }
         this.queryCount = 0;
         this.currentMessages = {}; // look up msgId to message sent and call back details.
 
@@ -67,32 +79,32 @@ export = class Sybase {
 
     async connect(): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.javaDB = spawn(this.pathToJavaBridge || '', [
-                this.host,
-                this.port ? this.port.toString() : '',
-                this.dbname,
-                this.username,
-                this.password,
-            ]);
+            this.repl = spawn(
+                this.fileExecutable,
+                [this.host, this.port ? this.port.toString() : '', this.dbname, this.username, this.password],
+                {
+                    cwd: this.pathToRepl,
+                },
+            );
 
-            this.javaDB.stdout.once('data', (data) => {
+            this.repl.stdout.once('data', (data) => {
                 if ((data + '').trim() != 'connected') {
                     reject(new Error('Error connecting ' + data));
                     return;
                 }
 
-                this.javaDB.stderr.removeAllListeners('data');
+                this.repl.stderr.removeAllListeners('data');
                 this.connected = true;
 
                 // set up normal listeners.
-                this.javaDB.stdout
+                this.repl.stdout
                     .setEncoding('utf8')
                     .pipe(this.jsonParser)
                     .on('data', async (jsonMsg) => {
                         this.onSQLResponse(jsonMsg);
                     });
 
-                this.javaDB.stderr.on('data', async (err) => {
+                this.repl.stderr.on('data', async (err) => {
                     this.onSQLError(err);
                 });
 
@@ -100,17 +112,17 @@ export = class Sybase {
             });
 
             // handle connection issues.
-            this.javaDB.stderr.once('data', (data) => {
-                this.javaDB.stdout.removeAllListeners('data');
-                this.javaDB.kill();
+            this.repl.stderr.once('data', (data) => {
+                this.repl.stdout.removeAllListeners('data');
+                this.repl.kill();
                 reject(new Error(data));
             });
         });
     }
 
     disconnect(): void {
-        if (this.javaDB) {
-            this.javaDB.kill();
+        if (this.repl) {
+            this.repl.kill();
         }
         this.connected = false;
     }
@@ -131,26 +143,22 @@ export = class Sybase {
             return;
         }
 
-        const hrstart = process.hrtime();
         this.queryCount++;
 
         const msg: Message = {
             msgId: this.queryCount,
             sql: sql,
-            sentTime: new Date().getTime(),
             callback: undefined,
-            hrstart: undefined,
             timeout: timeout && timeout > 0 ? timeout : null,
             isQuery,
         };
 
         const strMsg = JSON.stringify(msg).replace(/[\n]/g, '\\n');
         msg.callback = callback;
-        msg.hrstart = hrstart;
 
         this.currentMessages[msg.msgId] = msg;
 
-        this.javaDB.stdin.write(strMsg + '\n');
+        this.repl.stdin.write(strMsg + '\n');
         if (this.logQuery) {
             console.log(
                 'this: ' + this + ' currentMessages: ' + this.currentMessages + ' this.queryCount: ' + this.queryCount,
@@ -198,24 +206,12 @@ export = class Sybase {
 
         const result = jsonMsg.result;
 
-        const currentTime = new Date().getTime();
-        const sendTimeMS = currentTime - jsonMsg.javaEndTime;
-        const hrend = process.hrtime(request.hrstart);
-        const javaDuration = jsonMsg.javaEndTime - jsonMsg.javaStartTime;
-
         if (jsonMsg.error) {
             err = new Error(jsonMsg.errorMessage);
         }
 
         if (this.logTiming)
-            console.log(
-                'Execution time (hr): %ds %dms dbTime: %dms dbSendTime: %d sql=%s',
-                hrend[0],
-                hrend[1] / 1000000,
-                javaDuration,
-                sendTimeMS,
-                request.sql,
-            );
+            console.log('Execution time (hr): %ds %dms dbTime: %dms dbSendTime: %d sql=%s', request.sql);
         request.callback(err, result);
     }
 
